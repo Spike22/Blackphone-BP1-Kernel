@@ -91,7 +91,7 @@ static inline void dbg_dsi_mipi_dir_create(struct tegra_mipi_cal *mipi_cal)
 
 int tegra_mipi_cal_init_hw(struct tegra_mipi_cal *mipi_cal)
 {
-	unsigned cnt = MIPI_CAL_MIPI_CAL_CTRL_0;
+	//unsigned cnt = MIPI_CAL_MIPI_CAL_CTRL_0;
 
 	BUG_ON(IS_ERR_OR_NULL(mipi_cal));
 
@@ -99,8 +99,8 @@ int tegra_mipi_cal_init_hw(struct tegra_mipi_cal *mipi_cal)
 
 	tegra_mipi_cal_clk_enable(mipi_cal);
 
-	for (; cnt <= MIPI_VALID_REG_LIMIT; cnt += 4)
-		tegra_mipi_cal_write(mipi_cal, 0, cnt);
+	//for (; cnt <= MIPI_VALID_REG_LIMIT; cnt += 4)
+	//	tegra_mipi_cal_write(mipi_cal, 0, cnt);
 
 	/* Clear MIPI cal status register */
 	tegra_mipi_cal_write(mipi_cal,
@@ -108,15 +108,15 @@ int tegra_mipi_cal_init_hw(struct tegra_mipi_cal *mipi_cal)
 			MIPI_AUTO_CAL_DONE_DSIC(0x1) |
 			MIPI_AUTO_CAL_DONE_DSIB(0x1) |
 			MIPI_AUTO_CAL_DONE_DSIA(0x1) |
-			MIPI_AUTO_CAL_DONE_CSIE(0x1) |
-			MIPI_AUTO_CAL_DONE_CSID(0x1) |
-			MIPI_AUTO_CAL_DONE_CSIC(0x1) |
-			MIPI_AUTO_CAL_DONE_CSIB(0x1) |
-			MIPI_AUTO_CAL_DONE_CSIA(0x1) |
-			MIPI_AUTO_CAL_DONE(0x1) |
-			MIPI_CAL_DRIV_DN_ADJ(0x0) |
-			MIPI_CAL_DRIV_UP_ADJ(0x0) |
-			MIPI_CAL_TERMADJ(0x0) |
+			//MIPI_AUTO_CAL_DONE_CSIE(0x1) |
+			//MIPI_AUTO_CAL_DONE_CSID(0x1) |
+			//MIPI_AUTO_CAL_DONE_CSIC(0x1) |
+			//MIPI_AUTO_CAL_DONE_CSIB(0x1) |
+			//MIPI_AUTO_CAL_DONE_CSIA(0x1) |
+			//MIPI_AUTO_CAL_DONE(0x1) |
+			//MIPI_CAL_DRIV_DN_ADJ(0x0) |
+			//MIPI_CAL_DRIV_UP_ADJ(0x0) |
+			//MIPI_CAL_TERMADJ(0x0) |
 			MIPI_CAL_ACTIVE(0x0),
 		MIPI_CAL_CIL_MIPI_CAL_STATUS_0);
 

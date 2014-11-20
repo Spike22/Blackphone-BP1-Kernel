@@ -19,7 +19,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(CONFIG_MACH_S9321) && CONFIG_MACH_S9321
+#if (defined(CONFIG_MACH_S9321) && CONFIG_MACH_S9321) || \
+	(defined(CONFIG_MACH_S8515) && CONFIG_MACH_S8515)
 	#define POWER_CONTROL_ENABLE	1
 #else
 	#define POWER_CONTROL_ENABLE	0
@@ -79,8 +80,9 @@
 #define MAXFLASH_MODE_TORCH		1
 #define MAXFLASH_MODE_FLASH		2
 
-#define TINNO_TORCH_CURRENT 	10
-#define TINNO_FLASH_CURRENT 	27
+#define TINNO_TORCH_CURRENT		10
+#define TINNO_FLASH_CURRENT		27
+#define TINNO_BAT_CAP_LIMIT		15
 
 #define tinno_flash_flash_cap_size \
 			(sizeof(struct nvc_torch_flash_capabilities_v1) \
@@ -182,12 +184,12 @@ static u32 tinno_flash_torch_timer[tinno_flash_TORCH_TIMER_NUM] = {
 };
 
 #if defined(POWER_CONTROL_ENABLE) && POWER_CONTROL_ENABLE
-static int bat_read_vol(struct tinno_flash_info *info)
+static int bat_read_cap(struct tinno_flash_info *info)
 {
 	union power_supply_propval pv;
 	if (info->psy) {
-		//if (! info->psy->get_property(info->psy, POWER_SUPPLY_PROP_VOLTAGE_OCV, &pv))
-		if (! info->psy->get_property(info->psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &pv))
+		if (!info->psy->get_property(info->psy,
+				POWER_SUPPLY_PROP_CAPACITY, &pv))
 			return pv.intval;
 		else
 			return -1;
@@ -195,11 +197,15 @@ static int bat_read_vol(struct tinno_flash_info *info)
 	return -1;
 }
 
-static int bat_read_cap(struct tinno_flash_info *info)
+#if 0
+static int bat_read_vol(struct tinno_flash_info *info)
 {
 	union power_supply_propval pv;
 	if (info->psy) {
-		if (! info->psy->get_property(info->psy, POWER_SUPPLY_PROP_CAPACITY, &pv))
+		/* if (! info->psy->get_property(info->psy,
+			POWER_SUPPLY_PROP_VOLTAGE_OCV, &pv)) */
+		if (! info->psy->get_property(info->psy,
+				POWER_SUPPLY_PROP_VOLTAGE_NOW, &pv))
 			return pv.intval;
 		else
 			return -1;
@@ -227,7 +233,7 @@ static int bat_read_rbat(struct tinno_flash_info *info, unsigned int capacity)
 	if (info->psy_data == NULL)
 		return -1;
 
-	//rbat = info->psy_data->r_const;
+	/* rbat = info->psy_data->r_const; */
 	p = info->psy_data->rbat_lut;
 	if (!p)
 		return rbat;
@@ -249,7 +255,7 @@ static int bat_vol_drop(int ma_100, int r)
 {
 	return ma_100 * r / 10;
 }
-
+#endif
 /*
  whether the ma_100 can be satisfied by bat
  return 0 means safe
@@ -257,6 +263,7 @@ static int bat_vol_drop(int ma_100, int r)
 */
 static int bat_is_safe(struct tinno_flash_info *info, int ma_100)
 {
+#if 0
 	int vol = 0;
 	int cap = 0;
 	int rbat = 0;
@@ -283,6 +290,22 @@ static int bat_is_safe(struct tinno_flash_info *info, int ma_100)
 		return 0;
 	else
 		return -1;
+#else
+	/* use only bat capacity */
+	int cap = 0;
+
+	if (info->psy == NULL)
+		return 0;
+
+	cap = bat_read_cap(info);
+	if (cap < 0)
+		return 0;
+
+	if (cap >= TINNO_BAT_CAP_LIMIT)
+		return 0;
+	else
+		return -1;
+#endif
 }
 #endif
 

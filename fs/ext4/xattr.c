@@ -264,15 +264,13 @@ ext4_xattr_ibody_get(struct inode *inode, int name_index, const char *name,
 	size_t size;
 	void *end;
 	int error;
-	//luis
-	int page_mapped = 0;
 
 	if (!ext4_test_inode_state(inode, EXT4_STATE_XATTR))
 		return -ENODATA;
 	error = ext4_get_inode_loc(inode, &iloc);
 	if (error)
 		return error;
-	raw_inode = ext4_raw_inode(&iloc, &page_mapped);
+	raw_inode = ext4_raw_inode(&iloc);
 	header = IHDR(inode, raw_inode);
 	entry = IFIRST(header);
 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
@@ -294,10 +292,6 @@ ext4_xattr_ibody_get(struct inode *inode, int name_index, const char *name,
 	error = size;
 
 cleanup:
-	//luis
-	if (page_mapped)
-		ext4_raw_inode_unmap(&iloc, &page_mapped);
-
 	brelse(iloc.bh);
 	return error;
 }
@@ -399,15 +393,13 @@ ext4_xattr_ibody_list(struct dentry *dentry, char *buffer, size_t buffer_size)
 	struct ext4_iloc iloc;
 	void *end;
 	int error;
-	//luis
-	int page_mapped = 0;
 
 	if (!ext4_test_inode_state(inode, EXT4_STATE_XATTR))
 		return 0;
 	error = ext4_get_inode_loc(inode, &iloc);
 	if (error)
 		return error;
-	raw_inode = ext4_raw_inode(&iloc, &page_mapped);
+	raw_inode = ext4_raw_inode(&iloc);
 	header = IHDR(inode, raw_inode);
 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
 	error = ext4_xattr_check_names(IFIRST(header), end);
@@ -417,10 +409,6 @@ ext4_xattr_ibody_list(struct dentry *dentry, char *buffer, size_t buffer_size)
 					buffer, buffer_size);
 
 cleanup:
-	//luis
-	if (page_mapped)
-		ext4_raw_inode_unmap(&iloc, &page_mapped);
-
 	brelse(iloc.bh);
 	return error;
 }
@@ -852,17 +840,16 @@ inserted:
 
 			new_bh = sb_getblk(sb, block);
 			if (!new_bh) {
-				error = -ENOMEM;
 getblk_failed:
 				ext4_free_blocks(handle, inode, NULL, block, 1,
 						 EXT4_FREE_BLOCKS_METADATA);
+				error = -EIO;
 				goto cleanup;
 			}
 			lock_buffer(new_bh);
 			error = ext4_journal_get_create_access(handle, new_bh);
 			if (error) {
 				unlock_buffer(new_bh);
-				error = -EIO;
 				goto getblk_failed;
 			}
 			memcpy(new_bh->b_data, s->base, new_bh->b_size);
@@ -917,41 +904,26 @@ ext4_xattr_ibody_find(struct inode *inode, struct ext4_xattr_info *i,
 	struct ext4_xattr_ibody_header *header;
 	struct ext4_inode *raw_inode;
 	int error;
-	//luis
-	int page_mapped = 0;
 
 	if (EXT4_I(inode)->i_extra_isize == 0)
 		return 0;
-	raw_inode = ext4_raw_inode(&is->iloc, &page_mapped);
+	raw_inode = ext4_raw_inode(&is->iloc);
 	header = IHDR(inode, raw_inode);
 	is->s.base = is->s.first = IFIRST(header);
 	is->s.here = is->s.first;
 	is->s.end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
 	if (ext4_test_inode_state(inode, EXT4_STATE_XATTR)) {
 		error = ext4_xattr_check_names(IFIRST(header), is->s.end);
-		if (error) {
-			
-			//luis
-			if (page_mapped)
-				ext4_raw_inode_unmap(&is->iloc, &page_mapped);
-				
+		if (error)
 			return error;
-		}
 		/* Find the named attribute. */
 		error = ext4_xattr_find_entry(&is->s.here, i->name_index,
 					      i->name, is->s.end -
 					      (void *)is->s.base, 0);
-		if (error && error != -ENODATA) {
-			//luis
-			if (page_mapped)
-				ext4_raw_inode_unmap(&is->iloc, &page_mapped);
+		if (error && error != -ENODATA)
 			return error;
-		}
 		is->s.not_found = error;
 	}
-	//luis
-	if (page_mapped)
-		ext4_raw_inode_unmap(&is->iloc, &page_mapped);
 	return 0;
 }
 
@@ -963,15 +935,13 @@ ext4_xattr_ibody_set(handle_t *handle, struct inode *inode,
 	struct ext4_xattr_ibody_header *header;
 	struct ext4_xattr_search *s = &is->s;
 	int error;
-	//luis
-	int page_mapped = 0;
 
 	if (EXT4_I(inode)->i_extra_isize == 0)
 		return -ENOSPC;
 	error = ext4_xattr_set_entry(i, s);
 	if (error)
 		return error;
-	header = IHDR(inode, ext4_raw_inode(&is->iloc, &page_mapped));
+	header = IHDR(inode, ext4_raw_inode(&is->iloc));
 	if (!IS_LAST_ENTRY(s->first)) {
 		header->h_magic = cpu_to_le32(EXT4_XATTR_MAGIC);
 		ext4_set_inode_state(inode, EXT4_STATE_XATTR);
@@ -979,9 +949,6 @@ ext4_xattr_ibody_set(handle_t *handle, struct inode *inode,
 		header->h_magic = cpu_to_le32(0);
 		ext4_clear_inode_state(inode, EXT4_STATE_XATTR);
 	}
-	//luis
-	if (page_mapped)
-		ext4_raw_inode_unmap(&is->iloc, &page_mapped);
 	return 0;
 }
 
@@ -1017,8 +984,6 @@ ext4_xattr_set_handle(handle_t *handle, struct inode *inode, int name_index,
 	};
 	unsigned long no_expand;
 	int error;
-	//luis
-	int page_mapped = 0;
 
 	if (!name)
 		return -EINVAL;
@@ -1033,13 +998,9 @@ ext4_xattr_set_handle(handle_t *handle, struct inode *inode, int name_index,
 		goto cleanup;
 
 	if (ext4_test_inode_state(inode, EXT4_STATE_NEW)) {
-		struct ext4_inode *raw_inode = ext4_raw_inode(&is.iloc, &page_mapped);
+		struct ext4_inode *raw_inode = ext4_raw_inode(&is.iloc);
 		memset(raw_inode, 0, EXT4_SB(inode->i_sb)->s_inode_size);
 		ext4_clear_inode_state(inode, EXT4_STATE_NEW);
-		
-		//luis
-		if (page_mapped)
-			ext4_raw_inode_unmap(&is.iloc, &page_mapped);
 	}
 
 	error = ext4_xattr_ibody_find(inode, &i, &is);
@@ -1175,9 +1136,8 @@ static void ext4_xattr_shift_entries(struct ext4_xattr_entry *entry,
  * Expand an inode by new_extra_isize bytes when EAs are present.
  * Returns 0 on success or negative error number on failure.
  */
-//luis
 int ext4_expand_extra_isize_ea(struct inode *inode, int new_extra_isize,
-			       struct ext4_inode *raw_inode, handle_t *handle, struct ext4_iloc *iloc, int *page_mapped)
+			       struct ext4_inode *raw_inode, handle_t *handle)
 {
 	struct ext4_xattr_ibody_header *header;
 	struct ext4_xattr_entry *entry, *last, *first;
@@ -1195,12 +1155,6 @@ int ext4_expand_extra_isize_ea(struct inode *inode, int new_extra_isize,
 retry:
 	if (EXT4_I(inode)->i_extra_isize >= new_extra_isize) {
 		up_write(&EXT4_I(inode)->xattr_sem);
-
-		
-		//luis
-		if (*page_mapped)
-			ext4_raw_inode_unmap(iloc, page_mapped);
-
 		return 0;
 	}
 
@@ -1314,9 +1268,6 @@ retry:
 				    s_min_extra_isize) {
 					tried_min_extra_isize++;
 					new_extra_isize = s_min_extra_isize;
-					kfree(is); is = NULL;
-					kfree(bs); bs = NULL;
-					brelse(bh);
 					goto retry;
 				}
 				error = -1;
@@ -1388,22 +1339,11 @@ retry:
 		kfree(is);
 		kfree(bs);
 	}
-	
-	//luis
-	if (*page_mapped)
-		ext4_raw_inode_unmap(iloc, page_mapped);
-
-
 	brelse(bh);
 	up_write(&EXT4_I(inode)->xattr_sem);
 	return 0;
 
 cleanup:
-	//luis
-	if (*page_mapped)
-		ext4_raw_inode_unmap(iloc, page_mapped);
-
-
 	kfree(b_entry_name);
 	kfree(buffer);
 	if (is)

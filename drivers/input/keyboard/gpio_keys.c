@@ -343,9 +343,13 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 	unsigned int type = button->type ?: EV_KEY;
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
 
-        if ( button->code == KEY_POWER ){
-               printk(KERN_INFO "wayne add, power key pressed, up/down: %d\n", gpio_get_value_cansleep(button->gpio));
-        }
+	if (button->code == KEY_POWER) 
+		printk(KERN_INFO "power key pressed, up(0)/down(1): %d\n",state);
+#ifdef CONFIG_MACH_S9321
+	if ((button->code == KEY_HOME) || (button->code == KEY_MENU) ||
+			(button->code == KEY_BACK))
+		return;
+#endif
 	if (type == EV_ABS) {
 		if (state)
 			input_event(input, type, button->code, button->value);

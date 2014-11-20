@@ -68,8 +68,9 @@ struct psy_depletion_platform_data {
 	struct psy_depletion_ocv_lut *ocv_lut;
 };
 
-#if defined(CONFIG_MACH_S9321) && CONFIG_MACH_S9321
-struct psy_depletion_platform_data* psy_get_pdata(void);
+#if (defined(CONFIG_MACH_S9321) && CONFIG_MACH_S9321) || \
+	(defined(CONFIG_MACH_S8515) && CONFIG_MACH_S8515)
+struct psy_depletion_platform_data *psy_get_pdata(void);
 #endif
 
 #endif

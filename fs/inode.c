@@ -18,8 +18,6 @@
 #include <linux/buffer_head.h> /* for inode_has_buffers */
 #include <linux/ratelimit.h>
 #include "internal.h"
-//luis
-#include <linux/magic.h>
 
 /*
  * Inode locking rules:
@@ -166,12 +164,7 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
 	mapping->a_ops = &empty_aops;
 	mapping->host = inode;
 	mapping->flags = 0;
-	//luis
-	//mapping_set_gfp_mask(mapping, GFP_HIGHUSER_MOVABLE);
-	if (sb->s_magic == BDEVFS_MAGIC || sb->s_magic == EXT4_SUPER_MAGIC)
-		mapping_set_gfp_mask(mapping, GFP_HIGHUSER_MOVABLE & (~2));
-	else
-		mapping_set_gfp_mask(mapping, GFP_HIGHUSER_MOVABLE);
+	mapping_set_gfp_mask(mapping, GFP_HIGHUSER_MOVABLE);
 	mapping->assoc_mapping = NULL;
 	mapping->backing_dev_info = &default_backing_dev_info;
 	mapping->writeback_index = 0;

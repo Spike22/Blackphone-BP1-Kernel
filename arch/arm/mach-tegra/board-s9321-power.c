@@ -662,7 +662,7 @@ struct max77660_sim_platform_data max77660_sim_pdata = {
 #endif
 			.inst_pol = 0,			//Ivan 1 -> 0
 			.sim_puen = 1,
-			.pwrdn_debouncecnt = 0x10,
+			.pwrdn_debouncecnt = 0x20,
 		},
 		{
 			.detect_en = 1,
@@ -675,7 +675,7 @@ struct max77660_sim_platform_data max77660_sim_pdata = {
 #endif
 			.inst_pol = 0,
 			.sim_puen = 1,
-			.pwrdn_debouncecnt = 0x10,
+			.pwrdn_debouncecnt = 0x20,
 		},
 	},
 };

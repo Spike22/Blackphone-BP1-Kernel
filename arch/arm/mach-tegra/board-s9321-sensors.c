@@ -1907,7 +1907,7 @@ static void mpuirq_init(void)
 static struct thermal_trip_info skin_trips[] = {
 	{
 		.cdev_type = "skin-balanced",
-		.trip_temp = 70000,
+		.trip_temp = 60000,
 		.trip_type = THERMAL_TRIP_PASSIVE,
 		.upper = THERMAL_NO_LIMIT,
 		.lower = THERMAL_NO_LIMIT,
@@ -1915,7 +1915,7 @@ static struct thermal_trip_info skin_trips[] = {
 	},
 	{
 		.cdev_type = "tegra-shutdown",
-		.trip_temp = 200000,
+		.trip_temp = 70000,
 		.trip_type = THERMAL_TRIP_CRITICAL,
 		.upper = THERMAL_NO_LIMIT,
 		.lower = THERMAL_NO_LIMIT,

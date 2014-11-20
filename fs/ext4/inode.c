@@ -664,7 +664,7 @@ struct buffer_head *ext4_getblk(handle_t *handle, struct inode *inode,
 
 	bh = sb_getblk(inode->i_sb, map.m_pblk);
 	if (!bh) {
-		*errp = -ENOMEM;
+		*errp = -EIO;
 		return NULL;
 	}
 	if (map.m_flags & EXT4_MAP_NEW) {
@@ -2801,9 +2801,9 @@ static void ext4_end_io_dio(struct kiocb *iocb, loff_t offset,
 	if (!(io_end->flag & EXT4_IO_END_UNWRITTEN)) {
 		ext4_free_io_end(io_end);
 out:
-		inode_dio_done(inode);
 		if (is_async)
 			aio_complete(iocb, ret, 0);
+		inode_dio_done(inode);
 		return;
 	}
 
@@ -3463,7 +3463,7 @@ static int __ext4_get_inode_loc(struct inode *inode,
 
 	bh = sb_getblk(sb, block);
 	if (!bh)
-		return -ENOMEM;
+		return -EIO;
 	if (!buffer_uptodate(bh)) {
 		lock_buffer(bh);
 
@@ -3652,8 +3652,6 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 	journal_t *journal = EXT4_SB(sb)->s_journal;
 	long ret;
 	int block;
-	//luis
-	int page_mapped = 0;
 
 	inode = iget_locked(sb, ino);
 	if (!inode)
@@ -3667,7 +3665,7 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 	ret = __ext4_get_inode_loc(inode, &iloc, 0);
 	if (ret < 0)
 		goto bad_inode;
-	raw_inode = ext4_raw_inode(&iloc, &page_mapped);
+	raw_inode = ext4_raw_inode(&iloc);
 	inode->i_mode = le16_to_cpu(raw_inode->i_mode);
 	inode->i_uid = (uid_t)le16_to_cpu(raw_inode->i_uid_low);
 	inode->i_gid = (gid_t)le16_to_cpu(raw_inode->i_gid_low);
@@ -3829,21 +3827,12 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 		EXT4_ERROR_INODE(inode, "bogus i_mode (%o)", inode->i_mode);
 		goto bad_inode;
 	}
-	//luis
-	if (page_mapped)
-		ext4_raw_inode_unmap(&iloc, &page_mapped);
-		
 	brelse(iloc.bh);
 	ext4_set_inode_flags(inode);
 	unlock_new_inode(inode);
 	return inode;
 
 bad_inode:
-
-	//luis
-	if (page_mapped)
-		ext4_raw_inode_unmap(&iloc, &page_mapped);
-
 	brelse(iloc.bh);
 	iget_failed(inode);
 	return ERR_PTR(ret);
@@ -3899,9 +3888,7 @@ static int ext4_do_update_inode(handle_t *handle,
 				struct inode *inode,
 				struct ext4_iloc *iloc)
 {
-	//luis
-	int page_mapped = 0;
-	struct ext4_inode *raw_inode = ext4_raw_inode(iloc, &page_mapped);
+	struct ext4_inode *raw_inode = ext4_raw_inode(iloc);
 	struct ext4_inode_info *ei = EXT4_I(inode);
 	struct buffer_head *bh = iloc->bh;
 	int err = 0, rc, block;
@@ -4002,10 +3989,6 @@ static int ext4_do_update_inode(handle_t *handle,
 		raw_inode->i_extra_isize = cpu_to_le16(ei->i_extra_isize);
 	}
 
-	//luis
-	if (page_mapped)
-		ext4_raw_inode_unmap(iloc, &page_mapped);
-
 	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
 	rc = ext4_handle_dirty_metadata(handle, NULL, bh);
 	if (!err)
@@ -4014,11 +3997,6 @@ static int ext4_do_update_inode(handle_t *handle,
 
 	ext4_update_inode_fsync_trans(handle, inode, need_datasync);
 out_brelse:
-
-	//luis
-	if (page_mapped)
-		ext4_raw_inode_unmap(iloc, &page_mapped);
-
 	brelse(bh);
 	ext4_std_error(inode->i_sb, err);
 	return err;
@@ -4405,43 +4383,6 @@ ext4_reserve_inode_write(handle_t *handle, struct inode *inode,
 	return err;
 }
 
-//luis
-struct ext4_inode *ext4_raw_inode(struct ext4_iloc *iloc, int *page_mapped)
-{
-	void *virt = NULL;
-	*page_mapped = 0;
-	if (PageHighMem(iloc->bh->b_page)) {
-		printk("nvidia %s HIGH PAGE %p\n", __func__, iloc->bh->b_page);
-		lock_page(iloc->bh->b_page);
-		page_cache_get(iloc->bh->b_page);
-		virt = kmap(iloc->bh->b_page);
-		virt += (unsigned long)iloc->bh->b_data;
-		*page_mapped = 1;
-		
-	} else {
-		virt = iloc->bh->b_data;
-	}
-
-	return (struct ext4_inode *) (virt + iloc->offset);
-}
-
-
-void ext4_raw_inode_unmap(struct ext4_iloc *iloc, int *page_mapped)
-{
-	if (PageHighMem(iloc->bh->b_page)) {
-	
-		if (*page_mapped) {
-			printk("nvidia %s HIGH PAGE %p\n", __func__, iloc->bh->b_page);
-			kunmap(iloc->bh->b_page);
-			unlock_page(iloc->bh->b_page);
-			page_cache_release(iloc->bh->b_page);
-
-			*page_mapped = 0;
-		}
-	}
-}
-
-
 /*
  * Expand an inode by new_extra_isize bytes.
  * Returns 0 on success or negative error number on failure.
@@ -4453,13 +4394,11 @@ static int ext4_expand_extra_isize(struct inode *inode,
 {
 	struct ext4_inode *raw_inode;
 	struct ext4_xattr_ibody_header *header;
-	//luis
-	int page_mapped = 0;
 
 	if (EXT4_I(inode)->i_extra_isize >= new_extra_isize)
 		return 0;
 
-	raw_inode = ext4_raw_inode(&iloc, &page_mapped);
+	raw_inode = ext4_raw_inode(&iloc);
 
 	header = IHDR(inode, raw_inode);
 
@@ -4469,17 +4408,12 @@ static int ext4_expand_extra_isize(struct inode *inode,
 		memset((void *)raw_inode + EXT4_GOOD_OLD_INODE_SIZE, 0,
 			new_extra_isize);
 		EXT4_I(inode)->i_extra_isize = new_extra_isize;
-		
-		//luis
-		if (page_mapped)
-			ext4_raw_inode_unmap(&iloc, &page_mapped);
-			
 		return 0;
 	}
 
 	/* try to expand with EAs present */
 	return ext4_expand_extra_isize_ea(inode, new_extra_isize,
-					  raw_inode, handle, &iloc, &page_mapped);
+					  raw_inode, handle);
 }
 
 /*

@@ -518,7 +518,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		if (dbs_enable == 1) {
 			unsigned int latency;
 			/* policy latency is in nS. Convert it to uS first */
-			latency = policy->cpuinfo.transition_latency / 1000;
+			latency = 50;
 			if (latency == 0)
 				latency = 1;
 
@@ -563,15 +563,14 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		 * Stop the timerschedule work, when this governor
 		 * is used for first time
 		 */
-		if (dbs_enable == 0)
+		if (dbs_enable == 0) {
 			cpufreq_unregister_notifier(
 					&dbs_cpufreq_notifier_block,
 					CPUFREQ_TRANSITION_NOTIFIER);
-
-		mutex_unlock(&dbs_mutex);
-		if (!dbs_enable)
 			sysfs_remove_group(cpufreq_global_kobject,
-					   &dbs_attr_group);
+					&dbs_attr_group);
+		}
+		mutex_unlock(&dbs_mutex);
 
 		break;
 
@@ -611,7 +610,6 @@ static void __exit cpufreq_gov_dbs_exit(void)
 {
 	cpufreq_unregister_governor(&cpufreq_gov_conservative);
 }
-
 
 MODULE_AUTHOR("Alexander Clouter <alex@digriz.org.uk>");
 MODULE_DESCRIPTION("'cpufreq_conservative' - A dynamic cpufreq governor for "

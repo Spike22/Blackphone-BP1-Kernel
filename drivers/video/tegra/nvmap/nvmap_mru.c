@@ -127,7 +127,8 @@ struct tegra_iommu_area *nvmap_handle_iovmm_locked(struct nvmap_client *c,
 		evict = list_first_entry(mru, struct nvmap_handle,
 					 pgalloc.mru_list);
 
-	if (evict && evict->pgalloc.area->iovm_length >= h->size) {
+	if (evict && evict->pgalloc.area->iovm_length >= h->size &&
+			evict->pgalloc.dirty && !(evict->pgalloc.area->flags & TEGRA_IOMMU_MAP)) {
 		list_del(&evict->pgalloc.mru_list);
 		vm = evict->pgalloc.area;
 		evict->pgalloc.area = NULL;

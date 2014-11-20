@@ -57,15 +57,17 @@ void tegra_iommu_free_vm(struct tegra_iommu_area *area)
 	DEFINE_DMA_ATTRS(attrs);
 	u32 flags = TEGRA_IOMMU_IOVA | TEGRA_IOMMU_MAP;
 
-	if (WARN_ON((area->flags & flags) != flags)) {
+	if ((area->flags & flags) == flags) {
+		dma_set_attr(DMA_ATTR_SKIP_CPU_SYNC, &attrs);
+		dma_unmap_single_attrs(area->dev, area->iovm_start,
+				       area->iovm_length,
+				       0, &attrs);
+	} else if ((area->flags & flags) == TEGRA_IOMMU_IOVA) {
 		pr_err("%s(): area flags: %08x != %08x\n",
 		       __func__, area->flags, flags);
-		return;
+		dma_iova_free(area->dev, area->iovm_start, area->iovm_length);
 	}
 
-	dma_set_attr(DMA_ATTR_SKIP_CPU_SYNC, &attrs);
-	dma_unmap_single_attrs(area->dev, area->iovm_start, area->iovm_length,
-			       0, &attrs);
 	kfree(area);
 }
 

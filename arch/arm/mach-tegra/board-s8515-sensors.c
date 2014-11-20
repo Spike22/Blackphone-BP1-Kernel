@@ -1328,7 +1328,7 @@ static struct camera_platform_data ceres_pcl_pdatax = {
 	.modules = ceres_camera_module_infox,
 };
 
-static unsigned tinno_flash_estates[] = {4000, 1000, 0};
+static unsigned tinno_flash_estates[] = {4000, 4000, 0};
 static struct tinno_flash_platform_data tinno_flash_pdata = {
 	.dev_name = "torch",
 	.edpc_config = {

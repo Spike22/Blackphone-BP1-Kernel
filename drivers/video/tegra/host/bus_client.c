@@ -420,6 +420,16 @@ fail:
 	return err;
 }
 
+#if (defined(CONFIG_MACH_S9321) && CONFIG_MACH_S9321)
+//#define USE_GLOBAL_MEMORY	1
+#define USE_GLOBAL_MEMORY	0
+#endif
+
+#if defined(USE_GLOBAL_MEMORY) && USE_GLOBAL_MEMORY
+#define MAX_NP	48 /* host->info.nb_pts */
+static u32 g_waitbases[MAX_NP] = {0, };
+#endif
+
 static int nvhost_ioctl_channel_submit(struct nvhost_channel_userctx *ctx,
 		struct nvhost_submit_args *args)
 {
@@ -444,6 +454,10 @@ static int nvhost_ioctl_channel_submit(struct nvhost_channel_userctx *ctx,
 	struct nvhost_master *host = nvhost_get_host(ctx->ch->dev);
 	u32 *local_waitbases = NULL;
 	int err, i, hwctx_syncpt_idx = -1;
+
+#if defined(USE_GLOBAL_MEMORY) && USE_GLOBAL_MEMORY
+	memset(g_waitbases, 0, sizeof (g_waitbases));
+#endif
 
 	if (num_syncpt_incrs > host->info.nb_pts)
 		return -EINVAL;
@@ -492,8 +506,13 @@ static int nvhost_ioctl_channel_submit(struct nvhost_channel_userctx *ctx,
 
 	/* mass copy waitbases */
 	if (args->waitbases) {
+#if defined(USE_GLOBAL_MEMORY) && USE_GLOBAL_MEMORY
+		local_waitbases = g_waitbases;
+#else
 		local_waitbases = kzalloc(sizeof(u32) * num_syncpt_incrs,
 			GFP_KERNEL);
+#endif
+
 		err = copy_from_user(local_waitbases, waitbases,
 			sizeof(u32) * num_syncpt_incrs);
 		if (err) {
@@ -547,7 +566,10 @@ static int nvhost_ioctl_channel_submit(struct nvhost_channel_userctx *ctx,
 	}
 
 	/* not needed anymore */
+
+#if !defined(USE_GLOBAL_MEMORY)
 	kfree(local_waitbases);
+#endif
 	local_waitbases = NULL;
 
 	/* Is hwctx_syncpt_idx valid? */
@@ -597,7 +619,9 @@ fail_submit:
 	nvhost_job_unpin(job);
 fail:
 	nvhost_job_put(job);
+#if !defined(USE_GLOBAL_MEMORY)
 	kfree(local_waitbases);
+#endif
 	return err;
 }
 

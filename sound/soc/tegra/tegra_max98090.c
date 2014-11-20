@@ -1404,7 +1404,7 @@ static void tegra_speaker_throttle(unsigned int new_state,  void *priv_data)
 	struct snd_soc_card *card;
 	struct snd_soc_codec *codec;
 
-	if (!machine)
+//	if (!machine)
 		return;
 
 	card = machine->pcard;
@@ -1414,7 +1414,7 @@ static void tegra_speaker_throttle(unsigned int new_state,  void *priv_data)
 	switch (new_state) {
 	case TEGRA_SPK_EDP_NEG_1:
 		/* set codec volume to +12.5 dB, E-1 state */
-		tegra_speaker_edp_set_volume(codec, 0x3c, 0x3c);
+		tegra_speaker_edp_set_volume(codec, 0x36, 0x36);
 		break;
 	case TEGRA_SPK_EDP_ZERO:
 		/* set codec volume to 0 dB, E0 state */
@@ -1442,7 +1442,7 @@ static int tegra_max98090_event_int_spk(struct snd_soc_dapm_widget *w,
 	unsigned int approved = TEGRA_SPK_EDP_NUM_STATES;
 	int ret;
 
-	if (!machine)
+//	if (!machine)
 		return 0;
 
 	if (machine->spk_edp_client == NULL)
@@ -1462,7 +1462,7 @@ static int tegra_max98090_event_int_spk(struct snd_soc_dapm_widget *w,
 			}
 		} else {
 			/* set codec voulme to +12.5 dB, E-1 state */
-			tegra_speaker_edp_set_volume(codec, 0x3c, 0x3c);
+			tegra_speaker_edp_set_volume(codec, 0x36, 0x36);
 		}
 	} else {
 		ret = edp_update_client_request(
@@ -1986,7 +1986,7 @@ static __devinit int tegra_max98090_driver_probe(struct platform_device *pdev)
 		}
 		codec = card->rtd[DAI_LINK_HIFI].codec;
 		/* set codec volume to 0 dB , E0 state*/
-		tegra_speaker_edp_set_volume(codec, 0x2c, 0x2c);
+//		tegra_speaker_edp_set_volume(codec, 0x2c, 0x2c);
 		/* request E1 */
 		ret = edp_update_client_request(machine->spk_edp_client,
 				TEGRA_SPK_EDP_1, NULL);

@@ -58,7 +58,7 @@
 #define DEF_SELFTEST_ACCEL_FS           (2 << 3)
 #define DEF_SELFTEST_GYRO_SENS          (32768 / 250)
 /* wait time before collecting data */
-#define DEF_GYRO_WAIT_TIME              10
+#define DEF_GYRO_WAIT_TIME              20
 #define DEF_ST_STABLE_TIME              20
 #define DEF_ST_6500_STABLE_TIME         20
 #define DEF_GYRO_SCALE                  131
@@ -975,6 +975,9 @@ static int inv_do_test(struct inv_mpu_state *st, int self_test_flag,
 			msleep(DEF_ST_STABLE_TIME);
 	}
 
+	msleep(DEF_ST_STABLE_TIME);	//Ivan added
+	msleep(DEF_ST_STABLE_TIME);	//Ivan added
+
 	/* enable FIFO reading */
 	result = inv_i2c_single_write(st, reg->user_ctrl, BIT_FIFO_EN);
 	if (result)
@@ -994,6 +997,8 @@ static int inv_do_test(struct inv_mpu_state *st, int self_test_flag,
 		if (result)
 			return result;
 		mdelay(DEF_GYRO_WAIT_TIME);
+		mdelay(DEF_GYRO_WAIT_TIME);	//Ivan
+		
 		result = inv_i2c_single_write(st, reg->fifo_en, 0);
 		if (result)
 			return result;
@@ -1031,8 +1036,8 @@ static int inv_do_test(struct inv_mpu_state *st, int self_test_flag,
 					(__be16 *)(&data[ind + 2 * j]));
 				gyro_result[j] += vals[j];
 			}
-			pr_debug("%s self_test gyro data - %d %+d %+d %+d",
-				 st->hw->name, s, vals[0], vals[1], vals[2]);
+			/*pr_debug("%s self_test gyro data - %d %+d %+d %+d",
+				 st->hw->name, s, vals[0], vals[1], vals[2]);*/
 
 			s++;
 			i++;
@@ -1119,6 +1124,9 @@ int inv_hw_self_test(struct inv_mpu_state *st)
 	accel_result = 0;
 	gyro_result = 0;
 	test_times = DEF_ST_TRY_TIMES;
+
+	msleep(DEF_ST_STABLE_TIME*2);	//Ivan added
+
 	while (test_times > 0) {
 		result = inv_do_test(st, 0, gyro_bias_regular,
 			accel_bias_regular);
@@ -1142,6 +1150,8 @@ int inv_hw_self_test(struct inv_mpu_state *st)
 	}
 
 	test_times = DEF_ST_TRY_TIMES;
+	msleep(DEF_ST_STABLE_TIME*2);	//Ivan added
+	
 	while (test_times > 0) {
 		result = inv_do_test(st, BITS_SELF_TEST_EN, gyro_bias_st,
 					accel_bias_st);

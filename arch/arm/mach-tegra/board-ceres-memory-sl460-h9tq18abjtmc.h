@@ -16,8 +16,12 @@
  * 02111-1307, USA
  */
 
+//Ivan remove 12.75M
+#define TINNO_NO_12M_EMC
+
 static struct tegra14_emc_table
 	ceres_e1680_sl460_ceres_h9tq18abjtmc_table[] = {
+#ifndef TINNO_NO_12M_EMC	    
 		{
 			0x52,		/* Rev 5.3.8.e */
 			"D08",		/* DVFS table version */
@@ -338,6 +342,7 @@ static struct tegra14_emc_table
 			0x00020004, /* Mode Register 2 */
 			0x800b0000, /* Mode Register 4 */
 		},
+#endif				
 		{
 			0x52,		/* Rev 5.3.8.e */
 			"D08",		/* DVFS table version */
@@ -1622,6 +1627,7 @@ static struct tegra14_emc_table
 
 static struct tegra14_emc_table
 	ceres_e1680_sl460_ceres_h9tq18abjtmc_table_der[] = {
+#ifndef TINNO_NO_12M_EMC	    	    
 		{
 			0x52,		/* Rev 5.3.8.e */
 			"D08",		/* DVFS table version */
@@ -1942,6 +1948,7 @@ static struct tegra14_emc_table
 			0x00020004, /* Mode Register 2 */
 			0x800b0000, /* Mode Register 4 */
 		},
+#endif				
 		{
 			0x52,		/* Rev 5.3.8.e */
 			"D08",		/* DVFS table version */
@@ -3227,6 +3234,7 @@ static struct tegra14_emc_table
 
 static struct tegra14_emc_table
 	ceres_e1680_sl460_ceres_h9tq18abjtmc_table_ll[] = {
+#ifndef TINNO_NO_12M_EMC	    	    
 		{
 			0x52,		/* Rev 5.3.8.e */
 			"D08",		/* DVFS table version */
@@ -3547,6 +3555,7 @@ static struct tegra14_emc_table
 			0x00020004, /* Mode Register 2 */
 			0x800b0000, /* Mode Register 4 */
 		},
+#endif		
 		{
 			0x52,		/* Rev 5.3.8.e */
 			"D08",		/* DVFS table version */
@@ -4831,6 +4840,7 @@ static struct tegra14_emc_table
 
 static struct tegra14_emc_table
 	ceres_e1680_sl460_ceres_h9tq18abjtmc_table_ll_der[] = {
+#ifndef TINNO_NO_12M_EMC	    	    
 		{
 			0x52,		/* Rev 5.3.8.e */
 			"D08",		/* DVFS table version */
@@ -5151,6 +5161,7 @@ static struct tegra14_emc_table
 			0x00020004, /* Mode Register 2 */
 			0x800b0000, /* Mode Register 4 */
 		},
+#endif		
 		{
 			0x52,		/* Rev 5.3.8.e */
 			"D08",		/* DVFS table version */

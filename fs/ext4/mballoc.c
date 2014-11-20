@@ -3339,13 +3339,11 @@ static void ext4_mb_put_pa(struct ext4_allocation_context *ac,
 	ext4_group_t grp;
 	ext4_fsblk_t grp_blk;
 
+	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0)
+		return;
+
 	/* in this short window concurrent discard can set pa_deleted */
 	spin_lock(&pa->pa_lock);
-	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0) {
-		spin_unlock(&pa->pa_lock);
-		return;
-	}
-
 	if (pa->pa_deleted == 1) {
 		spin_unlock(&pa->pa_lock);
 		return;
